@@ -1,0 +1,224 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+class Account {
+protected:
+    string name;
+    int accNumber;
+    double balance;
+
+public:
+    Account(string n, int num, double bal) {
+        name = n;
+        accNumber = num;
+        balance = bal;
+    }
+
+    virtual void deposit(double amount) {
+        balance += amount;
+        cout << "Deposited: " << amount << " | New Balance: " << balance << endl;
+    }
+
+    virtual void withdraw(double amount) {
+        try {
+            if (amount > balance) {
+                throw runtime_error("Insufficient balance!");
+            }
+            balance -= amount;
+            cout << "Withdrawn: " << amount << " | New Balance: " << balance << endl;
+        }
+        catch (runtime_error &e) {
+            cout << "Error: " << e.what() << endl;
+        }
+    }
+
+    virtual void display() {
+        cout << "\nAccount Holder: " << name
+             << "\nAccount Number: " << accNumber
+             << "\nBalance: " << balance << endl;
+    }
+
+    int getAccNumber() { return accNumber; }
+    string getName() { return name; }
+    double getBalance() { return balance; }
+
+    virtual string getType() = 0; // Pure virtual
+};
+
+// Savings Account
+class SavingsAccount : public Account {
+public:
+    SavingsAccount(string n, int num, double bal) : Account(n, num, bal) {}
+    string getType() override { return "Savings"; }
+
+    void withdraw(double amount) override {
+        cout << "\n[Savings Account Withdrawal]\n";
+        Account::withdraw(amount);
+    }
+};
+
+// Current Account
+class CurrentAccount : public Account {
+public:
+    CurrentAccount(string n, int num, double bal) : Account(n, num, bal) {}
+    string getType() override { return "Current"; }
+
+    void withdraw(double amount) override {
+        cout << "\n[Current Account Withdrawal]\n";
+        Account::withdraw(amount);
+    }
+};
+
+// Save all accounts to file
+void saveToFile(vector<Account*> &accounts) {
+    ofstream fout("accounts.txt");
+    for (auto acc : accounts) {
+        fout << acc->getType() << " "
+             << acc->getName() << " "
+             << acc->getAccNumber() << " "
+             << acc->getBalance() << "\n";
+    }
+    fout.close();
+}
+
+// Load accounts from file
+void loadFromFile(vector<Account*> &accounts) {
+    ifstream fin("accounts.txt");
+    string type, name;
+    int num;
+    double bal;
+
+    while (fin >> type >> name >> num >> bal) {
+        if (type == "Savings") {
+            accounts.push_back(new SavingsAccount(name, num, bal));
+        } else if (type == "Current") {
+            accounts.push_back(new CurrentAccount(name, num, bal));
+        }
+    }
+    fin.close();
+}
+
+// Main Program
+int main() {
+    vector<Account*> accounts;
+    int choice;
+
+    // Load saved accounts
+    loadFromFile(accounts);
+
+    while (true) {
+        cout << "\n===== Bank Management System =====\n";
+        cout << "1. Create Savings Account\n";
+        cout << "2. Create Current Account\n";
+        cout << "3. Deposit\n";
+        cout << "4. Withdraw\n";
+        cout << "5. Display Account Details\n";
+        cout << "6. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 6) {
+            cout << "Saving data & Exiting...\n";
+            saveToFile(accounts);
+            break;
+        }
+
+        switch (choice) {
+            case 1: {
+                string name;
+                int accNo;
+                double balance;
+                cout << "Enter Name: ";
+                cin >> name;
+                cout << "Enter Account Number: ";
+                cin >> accNo;
+                cout << "Enter Initial Balance: ";
+                cin >> balance;
+                accounts.push_back(new SavingsAccount(name, accNo, balance));
+                cout << "Savings Account Created!\n";
+                break;
+            }
+
+            case 2: {
+                string name;
+                int accNo;
+                double balance;
+                cout << "Enter Name: ";
+                cin >> name;
+                cout << "Enter Account Number: ";
+                cin >> accNo;
+                cout << "Enter Initial Balance: ";
+                cin >> balance;
+                accounts.push_back(new CurrentAccount(name, accNo, balance));
+                cout << "Current Account Created!\n";
+                break;
+            }
+
+            case 3: {
+                int accNo;
+                double amount;
+                cout << "Enter Account Number: ";
+                cin >> accNo;
+                cout << "Enter Deposit Amount: ";
+                cin >> amount;
+
+                bool found = false;
+                for (auto acc : accounts) {
+                    if (accNo == acc->getAccNumber()) {
+                        acc->deposit(amount);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cout << "Account not found!\n";
+                break;
+            }
+
+            case 4: {
+                int accNo;
+                double amount;
+                cout << "Enter Account Number: ";
+                cin >> accNo;
+                cout << "Enter Withdraw Amount: ";
+                cin >> amount;
+
+                bool found = false;
+                for (auto acc : accounts) {
+                    if (accNo == acc->getAccNumber()) {
+                        acc->withdraw(amount);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cout << "Account not found!\n";
+                break;
+            }
+
+            case 5: {
+                int accNo;
+                cout << "Enter Account Number: ";
+                cin >> accNo;
+
+                bool found = false;
+                for (auto acc : accounts) {
+                    if (accNo == acc->getAccNumber()) {
+                        acc->display();
+                        cout << "Account Type: " << acc->getType() << endl;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) cout << "Account not found!\n";
+                break;
+            }
+
+            default:
+                cout << "Invalid choice! Try again.\n";
+        }
+    }
+
+    // Free allocated memory
+    for (auto acc : accounts) delete acc;
+
+    return 0;
+}
